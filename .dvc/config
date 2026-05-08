@@ -1,0 +1,4 @@
+[core]
+    remote = egde_ia_dep
+['remote "egde_ia_dep"']
+    url = F:\dvc_remote_storage\EgdeIA_PFE

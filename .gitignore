@@ -1,2 +1,19 @@
+#dependencies
+venv/
+__pycache__/
+
+#dataset
 data/*
 !data/**/*.dvc
+
+#model 
+model/train/
+model/detect/
+model/val/
+
+#YOLOv5 repo
+model/yolov5/
+
+#MLflow
+mlruns/
+

@@ -27,9 +27,9 @@ TEST_LBLS = ROOT / "data/splits/test/labels"
 YOLOV5_DIR = ROOT / "model/yolov5"
 
 #Golden baseline from edge_cctv_v2 (float31 val run)
-GOLDEN_MAP50 = 0.937
-GOLDEN_PRECISION = 0.876
-GOLDEN_RECALL = 0.874
+GOLDEN_MAP50 = 0.922   # mAP@0.5
+GOLDEN_PRECISION = 0.859
+GOLDEN_RECALL = 0.904
 
 # Acceptable thresholds
 MIN_MAP50 = 0.60

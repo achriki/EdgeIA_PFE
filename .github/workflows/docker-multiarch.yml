@@ -11,7 +11,7 @@
 #   PI_USER: SSH username (e.g. pi)
 #   PI_SSH_KEY: private key (public key must be on Pi)
 
-name: CI - Build . Test . Push . deploy
+name: CI — Build · Test · Push · Deploy
 
 on:
   push:
@@ -101,10 +101,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-    # job 3: SSH into Pi and trigger K3s rolling update
-    # Only runs after a successful image push (needs: build).
-    # Only runs on main (not PRs).
-    deploy:
+  # job 3: SSH into Pi and trigger K3s rolling update
+  # Only runs after a successful image push (needs: build).
+  # Only runs on main (not PRs).
+  deploy:
       name: Deploy to Raspberry Pi (K3s)
       runs-on: ubuntu-latest
       needs: build

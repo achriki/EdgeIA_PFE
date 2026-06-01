@@ -1,0 +1,142 @@
+# Triggered on every push to main.
+# Jobs:
+#   1. test: run pytest (unit + functional) on amd64
+#   2. build: build multi-arch image and push to Docker Hub
+#   3. deploy: SSH into Pi and trigger K3s rolling update
+#
+# Secrets required (set in GitHub repo Settings - Secrets):
+#   DOCKER_HUB_USERNAME
+#   DOCKER_HUB_TOKEN: Access Token, not your password
+#   PI_HOST: Pi's local IP
+#   PI_USER: SSH username (e.g. pi)
+#   PI_SSH_KEY: private key (public key must be on Pi)
+
+name: CI — Build · Test · Push · Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/edgeia-person-detector
+  # Force Node.js 24 for all Actions (suppresses deprecation warnings)
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+
+# JOB 1 - Run pytest BEFORE building the image
+# Rationale: fail fast - no point building a broken model image
+
+jobs:
+  test:
+    name: Pytest (unit + functional)
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+ 
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5.4.0
+        with:
+          python-version: "3.11"      # Must match the Python version in docker/Dockerfile
+          cache: pip                  # Caches pip downloads between runs (~30s saved)
+ 
+      - name: Install dependencies
+        run: pip install -r docker/requirements.txt pytest
+ 
+      - name: Run unit tests
+        run: pytest tests/unit/ -v --tb=short
+ 
+      - name: Run functional inference tests
+        run: pytest tests/functional/ -v --tb=short
+
+
+  # JOB 2 - Build multi-arch Docker image and push to Docker Hub
+  # Runs only AFTER tests pass (needs: test)
+  # Pushes only on main branch (not on PRs - build only, no push)
+
+  build:
+    name: Build & push multi-arch image
+    runs-on: ubuntu-latest
+    needs: test                        # ← blocked until Job 1 succeeds
+ 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+ 
+      # QEMU allows the amd64 runner to emulate ARM/v7 for the Pi
+      - name: Set up QEMU (ARM emulation)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm
+ 
+      # BuildKit — required for multi-platform builds
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+ 
+      # Authenticate with Docker Hub (skip on PRs to avoid leaking secrets)
+      - name: Log in to Docker Hub
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+ 
+      # Generate two tags:
+      #   latest        → always points to the newest passing build
+      #   sha-<commit>  → immutable tag for precise rollback in K3s
+      - name: Extract metadata (tags)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+ 
+      # Build for both ARM/v7 (Pi 3B) and amd64 (VM/dev machine)
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm/v7
+          push: ${{ github.ref == 'refs/heads/main' }}   # push only on main
+          tags: ${{ steps.meta.outputs.tags }}
+          # GHA cache: reuses BuildKit layers between runs (~3× faster rebuilds)
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  # JOB 3 — SSH into Raspberry Pi → rolling update in K3s
+  # Runs only after a successful push (needs: build)
+  # Skipped on PRs (if: github.ref == 'refs/heads/main')
+
+  deploy:
+    name: Deploy to Raspberry Pi (K3s)
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+ 
+    steps:
+      - name: SSH into Pi and trigger rolling update
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          script: |
+            # 1. Pull the new image explicitly before restarting pods
+            #    (ensures image is cached locally before K3s restarts)
+            docker pull ${{ env.IMAGE }}:latest
+ 
+            # 2. Apply the manifest — K3s will detect the new image tag
+            #    and perform a rolling update:
+            #      a. Start new pod with new image
+            #      b. Wait for readiness probe to pass
+            #      c. Only then terminate the old pod
+            #    If the new pod never becomes Ready, K3s rolls back automatically.
+            kubectl apply -f /home/achriki/k8s/deployment.yaml
+ 
+            # 3. Block until rollout completes (or timeout after 2 min)
+            kubectl rollout status deployment/person-detector --timeout=120s

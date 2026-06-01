@@ -11,7 +11,6 @@ Project root: C:/Users/ASUS/Desktop/EdgeIA_PFE/
 import os
 import time
 import pytest
-import torch
 import numpy as np
 from pathlib import Path
 from PIL import Image
@@ -20,7 +19,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 
 MODEL_PT = ROOT / "model/train/edge_cctv_v2/weights/best.pt"
-MODEL_TFLite = ROOT / "model/export/edge_cctv_v2/best_int8.tflite"  # model compression output
+MODEL_TFLite = ROOT / "model/train/edge_cctv_v2/best_int8.tflite"  # model compression output
 DATA_YAML = ROOT / "data/data.yaml"
 TEST_IMGS = ROOT / "data/splits/test/images"
 TEST_LBLS = ROOT / "data/splits/test/labels"
@@ -83,6 +82,7 @@ def yolov5_dir() -> Path:
 
 @pytest.fixture(scope="session")
 def loaded_model():
+    import torch                      # lazy — only runs when fixture is called
     import sys
     sys.path.insert(0, str(YOLOV5_DIR))
 

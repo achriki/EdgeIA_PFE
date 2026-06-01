@@ -34,10 +34,6 @@ jobs:
     runs-on: ubuntu-latest
  
     steps:
-      - name: Install dependencies
-        run: |
-            pip install -r ../docker/requirements.txt
-            pip install -r ../requirements-test.txt 
     
       - name: Checkout code
         uses: actions/checkout@v4.2.2
@@ -49,7 +45,9 @@ jobs:
           cache: pip                  # Caches pip downloads between runs (~30s saved)
  
       - name: Install dependencies
-        run: pip install -r docker/requirements.txt pytest
+        run: |
+            pip install -r docker/requirements.txt
+            pip install -r requirements-test.txt 
  
       - name: Run unit tests
         run: pytest tests/unit/ -v --tb=short

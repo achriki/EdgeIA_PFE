@@ -48,13 +48,17 @@ jobs:
         run: |
             pip install -r docker/requirements.txt
             pip install -r requirements-test.txt 
- 
+
+      - name: Pull model weights (DVC)
+        run: |
+            pip install dvc
+            dvc pull model/train/edge_cctv_v2/weights/best.pt
+            
       - name: Run unit tests
         run: pytest tests/unit/ -v --tb=short
  
       - name: Run functional inference tests
         run: pytest tests/functional/ -v --tb=short
-
 
   # JOB 2 - Build multi-arch Docker image and push to Docker Hub
   # Runs only AFTER tests pass (needs: test)

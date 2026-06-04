@@ -1,5 +1,6 @@
 [core]
     remote = gdrive_remote
+    autostage = true
 ['remote "egde_ia_dep"']
     url = F:\dvc_remote_storage\EgdeIA_PFE
 ['remote "gdrive_remote"']

@@ -51,6 +51,7 @@ jobs:
         run: |
             pip install -r docker/requirements.txt
             pip install -r requirements-test.txt 
+            pip install -r model/yolov5/requirements.txt
 
       - name: Run unit tests
         run: pytest tests/unit/ -v --tb=short

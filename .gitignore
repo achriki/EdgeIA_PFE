@@ -12,7 +12,7 @@ model/detect/
 model/val/
 
 #YOLOv5 repo
-model/yolov5/
+# model/yolov5/
 
 #MLflow
 mlruns/

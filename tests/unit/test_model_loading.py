@@ -16,6 +16,16 @@ import torch
 import numpy as np
 from pathlib import Path
 
+
+#  Root & Path constants
+ROOT = Path(__file__).resolve().parents[1]
+MODEL_PT = ROOT / "model/train/edge_cctv_v2/weights/best.pt"
+# Skip entire module if model weights aren't available (e.g. CI without DVC remote)
+requires_model = pytest.mark.skipif(
+    not MODEL_PT.exists(),
+    reason="best.pt not available — DVC remote is local, skipped on CI"
+)
+
 # Test 1: check if the artifact exists 
 
 class TestModelArtifactExists:

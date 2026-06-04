@@ -35,8 +35,9 @@ MIN_MAP50 = 0.60
 MAX_INT8_DROP = 0.03 # max allowed mAP drop after TFLite int 3 quantisation
 MAX_LATENCY_MS = 500 #single-image CPU inference ceilling
 
-# Path fixtures
 
+
+# Path fixtures
 @pytest.fixture(scope="session")
 def project_root() -> Path:
     """Absolute path to the EdgeIA_PFE project root."""

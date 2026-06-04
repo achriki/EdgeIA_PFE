@@ -37,6 +37,9 @@ jobs:
     
       - name: Checkout code
         uses: actions/checkout@v4.2.2
+        with:
+          submodules: recursive    # clones model/yolov5 alongside the main repo
+          lfs: true                # keep LFS enabled for best.pt
  
       - name: Set up Python 3.11
         uses: actions/setup-python@v5.4.0

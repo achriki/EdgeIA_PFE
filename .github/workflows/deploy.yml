@@ -44,14 +44,6 @@ jobs:
           python-version: "3.11"      # Must match the Python version in docker/Dockerfile
           cache: pip                  # Caches pip downloads between runs (~30s saved)
       
-      - name: Pull model weights (DVC)
-        env:
-          GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
-        run: |
-            pip install "dvc[gdrive]"
-            dvc remote modify gdrive_remote gdrive_use_service_account false
-            dvc pull
-      
       - name: Install dependencies
         run: |
             pip install -r docker/requirements.txt

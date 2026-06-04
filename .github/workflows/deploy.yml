@@ -54,7 +54,7 @@ jobs:
           GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
         run: |
           pip install "dvc[gdrive]"
-          dvc pull
+          dvc pull model/train/edge_cctv_v2/weights/best.pt.dvc
             
       - name: Run unit tests
         run: pytest tests/unit/ -v --tb=short

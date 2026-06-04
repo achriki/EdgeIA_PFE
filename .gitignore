@@ -7,7 +7,7 @@ data/*
 !data/**/*.dvc
 
 #model 
-model/train/
+# model/train/
 model/detect/
 model/val/
 

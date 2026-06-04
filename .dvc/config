@@ -5,4 +5,4 @@
 ['remote "gdrive_remote"']
     url = gdrive://17fep0esYxVsDOjHSiVyAzsyRISIGzPpB
     gdrive_acknowledge_abuse = true
-    gdrive_use_service_account = true
+    gdrive_use_service_account = false

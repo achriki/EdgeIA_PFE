@@ -48,11 +48,9 @@ jobs:
         env:
           GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
         run: |
-          pip install "dvc[gdrive]"
-          mkdir -p .dvc/cache/files/md5
-          dvc remote add gdrive_remote gdrive://17fep0esYxVsDOjHSiVyAzsyRISIGzPpB --force
-          dvc remote modify gdrive_remote gdrive_use_service_account true
-          dvc pull
+            pip install "dvc[gdrive]"
+            dvc remote modify gdrive_remote gdrive_use_service_account false
+            dvc pull
       
       - name: Install dependencies
         run: |

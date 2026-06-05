@@ -15,6 +15,10 @@ import pytest
 import torch
 import numpy as np
 from pathlib import Path
+import pathlib
+
+# Patch: remap WindowsPath → PosixPath when loading on Linux
+pathlib.WindowsPath = pathlib.PosixPath
 
 
 #  Root & Path constants

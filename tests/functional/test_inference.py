@@ -16,6 +16,11 @@ import torch
 import numpy as np
 import cv2
 from pathlib import Path
+import pathlib
+
+
+# Patch: remap WindowsPath → PosixPath when loading on Linux
+pathlib.WindowsPath = pathlib.PosixPath
 
 # Project thresholds
 CONF_THRESHOLD = 0.25

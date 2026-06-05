@@ -13,7 +13,11 @@ import time
 import pytest
 import numpy as np
 from pathlib import Path
+import pathlib
 from PIL import Image
+
+# Patch: remap WindowsPath → PosixPath when loading on Linux
+pathlib.WindowsPath = pathlib.PosixPath
 
 #  Root & Path constants
 ROOT = Path(__file__).resolve().parents[1]

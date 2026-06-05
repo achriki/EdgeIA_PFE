@@ -1,0 +1,14 @@
+path: C:/Users/ASUS/Desktop/EdgeIA_PFE/data/splits
+train: train/images
+val: val/images
+test: test/images
+
+nc: 1
+names: ['person']
+
+roboflow:
+  workspace: adams-workspace-q6pek
+  project: adams-workspace-q6pek
+  version: dataset
+  license: Private
+  url: https://app.roboflow.com/adams-workspace-q6pek/adams-workspace-q6pek/dataset

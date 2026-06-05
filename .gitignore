@@ -5,6 +5,8 @@ __pycache__/
 #dataset
 data/*
 !data/**/*.dvc
+!data/splits
+!data/splits/*.dvc
 
 #model 
 # model/train/

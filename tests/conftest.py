@@ -23,7 +23,7 @@ pathlib.WindowsPath = pathlib.PosixPath
 ROOT = Path(__file__).resolve().parents[1]
 
 MODEL_PT = ROOT / "model/train/edge_cctv_v2/weights/best.pt"
-MODEL_TFLite = ROOT / "model/train/edge_cctv_v2/best_int8.tflite"  # model compression output
+MODEL_TFLITE = ROOT / "model/train/edge_cctv_v2/best_int8.tflite"  # model compression output
 DATA_YAML = ROOT / "data/data.yaml"
 TEST_IMGS = ROOT / "data/splits/test/images"
 TEST_LBLS = ROOT / "data/splits/test/labels"
@@ -57,7 +57,7 @@ def model_pt_path() -> Path:
 @pytest.fixture(scope="session")
 def model_tflite_path() -> Path:
     """Path to TFLite int8 export (T4 output)."""
-    return MODEL_TFLite
+    return MODEL_TFLITE
 
 
 @pytest.fixture(scope="session")

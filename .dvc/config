@@ -4,8 +4,5 @@
 ['remote "egde_ia_dep"']
     url = F:\dvc_remote_storage\EgdeIA_PFE
 ['remote "gdrive_remote"']
-    url = gdrive://17fep0esYxVsDOjHSiVyAzsyRISIGzPpB
+    url = gdrive://1-yAOmoOFZ4pSi-22KWLp5h-jS71VknAu
     gdrive_acknowledge_abuse = true
-    gdrive_use_service_account = true
-    gdrive_client_id = 325769698922-nrco8kdvtuk2eu3t2j99omi7kpo546nu.apps.googleusercontent.com
-    gdrive_client_secret = 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

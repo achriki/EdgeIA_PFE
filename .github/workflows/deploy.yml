@@ -40,14 +40,7 @@ jobs:
         with:
           submodules: recursive    # clones model/yolov5 alongside the main repo
           lfs: true                # keep LFS enabled for best.pt
-
-      - name: Pull data 
-        env:
-          GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
-        run: |
-          pip install "dvc[gdrive]"
-          dvc pull data/splits/test.dvc data/splits/train.dvc data/splits/val.dvc --force
-
+          
       - name: Set up Python 3.11
         uses: actions/setup-python@v5.4.0
         with:

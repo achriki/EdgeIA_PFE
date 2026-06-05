@@ -1,0 +1,90 @@
+---
+# =============================================================================
+# roles/k3s_master/tasks/main.yml
+# Installing and configuring K3s in MASTER mode (server)
+# on the Raspberry Pi 3B.
+#
+# After T13, T14 will use the token retrieved here to connect to the workers.
+# =============================================================================
+
+- name: "K3s | Check if K3s is already installed"
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+- name: "K3s | Download and install K3s {{ k3s_version }}"
+  ansible.builtin.shell:
+    cmd: >
+      curl -sfL https://get.k3s.io |
+      INSTALL_K3S_VERSION="{{ k3s_version }}"
+      INSTALL_K3S_EXEC="server
+        --disable traefik
+        --disable servicelb
+        --write-kubeconfig-mode 644
+        --node-name {{ pi_hostname }}"
+      sh -
+  when: not k3s_binary.stat.exists
+  # --disable traefik/servicelb : You don't need an LB on a Pi 3B
+  # --write-kubeconfig-mode 644 : allows the pi user to read the kubeconfig
+
+- name: "K3s | Enable and start the K3s service"
+  ansible.builtin.systemd:
+    name: k3s
+    enabled: true
+    state: started
+
+- name: "K3s | Wait for K3s to be ready (API server up)"
+  ansible.builtin.wait_for:
+    port: "{{ k3s_api_port }}"
+    host: "127.0.0.1"
+    delay: 10
+    timeout: 120
+
+- name: "K3s | Wait until the master node is ready"
+  ansible.builtin.command:
+    cmd: kubectl get nodes --no-headers
+  register: kubectl_nodes
+  until: "'Ready' in kubectl_nodes.stdout"
+  retries: 15
+  delay: 10
+  changed_when: false
+
+- name: "K3s | View node status"
+  ansible.builtin.debug:
+    msg: "{{ kubectl_nodes.stdout_lines }}"
+
+- name: "K3s | Read the cluster token (for T14/T15 workers)"
+  ansible.builtin.slurp:
+    src: "{{ k3s_token_path }}"
+  register: k3s_token_raw
+
+- name: "K3s | View token (to be copied for workers)"
+  ansible.builtin.debug:
+    msg: "K3S_TOKEN={{ k3s_token_raw.content | b64decode | trim }}"
+  # This token will be used in T15 (K3s worker VM)
+
+- name: "K3s | create .kube directory if not exists"
+  ansible.builtin.file:
+    path: "/home/{{ pi_user }}/.kube"
+    state: directory
+    owner: "{{ pi_user }}"
+    group: "{{ pi_user }}"
+    mode: "0700"
+    
+- name: "K3s | Copy the kubeconfig to the pi user"
+  ansible.builtin.copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "/home/{{ pi_user }}/.kube/config"
+    owner: "{{ pi_user }}"
+    group: "{{ pi_user }}"
+    mode: "0600"
+    remote_src: true
+  notify: fix_kubeconfig_server
+
+- name: "K3s | Create the .kube directory if it does not exist"
+  ansible.builtin.file:
+    path: "/home/{{ pi_user }}/.kube"
+    state: directory
+    owner: "{{ pi_user }}"
+    group: "{{ pi_user }}"
+    mode: "0700"

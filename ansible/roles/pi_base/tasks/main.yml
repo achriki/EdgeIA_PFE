@@ -1,0 +1,77 @@
+---
+# =============================================================================
+# roles/pi_base/tasks/main.yml
+# base system configuration : hostname, timezone, essential packages, cgroups for K3s, deactivate swap.
+# =============================================================================
+
+- name: "Basics | Set the hostname"
+  ansible.builtin.hostname:
+    name: "{{ pi_hostname }}"
+
+- name: "Basic | Update /etc/hosts with the hostname"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    line: "127.0.1.1  {{ pi_hostname }}"
+    state: present
+
+- name: "Basics | Set the timezone"
+  community.general.timezone:
+    name: "{{ pi_timezone }}"
+
+- name: "Basics | Update the apt cache"
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600   # Do not re-download if less than 1 hour has passed
+
+- name: "Base | Install the essential packages"
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - git
+      - vim
+      - htop
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - apt-transport-https
+      - software-properties-common
+      - python3-pip
+      - iptables          # required by K3s
+    state: present
+
+- name: "Base | Disable swap (required by K3s)"
+  ansible.builtin.command:
+    cmd: swapoff -a
+  changed_when: false
+
+- name: "Base | Remove the swap partition from fstab (permanent)"
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\sswap\s.*)$'
+    replace: '# \1'
+
+# K3s requires cgroups to be enabled - on Pi OS Lite, they are disabled by default in /boot/cmdline.txt
+- name: "Base | Check whether cgroup_memory is already enabled"
+  ansible.builtin.command:
+    cmd: grep -c "cgroup_memory=1" /boot/cmdline.txt
+  register: cgroup_check
+  failed_when: false
+  changed_when: false
+
+- name: "Base | Enable cgroup_memory and cgroup_enable in /boot/cmdline.txt"
+  ansible.builtin.replace:
+    path: /boot/cmdline.txt
+    regexp: '(^.+)$'
+    replace: '\1 cgroup_memory=1 cgroup_enable=memory'
+  when: cgroup_check.stdout == "0"
+  notify: reboot_pi
+
+- name: "Base | Enable ip_forward (required for K3s network)"
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_set: true
+    state: present
+    reload: true

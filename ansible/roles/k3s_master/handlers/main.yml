@@ -1,0 +1,8 @@
+---
+# roles/k3s_master/handlers/main.yml
+
+- name: fix_kubeconfig_server
+  ansible.builtin.replace:
+    path: "/home/{{ pi_user }}/.kube/config"
+    regexp: 'https://192\.168\.10\.2:6443'
+    replace: "https://{{ ansible_host }}:6443"

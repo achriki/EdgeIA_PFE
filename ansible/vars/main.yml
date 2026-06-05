@@ -1,0 +1,26 @@
+---
+# =============================================================================
+# vars/main.yml — Variables globales du provisioning Pi
+# =============================================================================
+
+# base system
+pi_hostname: "raspEdge"
+pi_timezone: "Europe/Paris"
+
+# User
+pi_user: "achriki"
+
+# Docker
+docker_compose_version: "2.27.0"
+
+# K3s
+k3s_version: "v1.29.4+k3s1"
+k3s_token_path: "/var/lib/rancher/k3s/server/node-token"
+
+# K3s API listening port (uses T15 for the worker)
+k3s_api_port: 6443
+
+# Node Exporter
+node_exporter_version: "1.8.0"
+node_exporter_port: 9100
+node_exporter_arch: "armv7"   # Pi 3B = ARM 32-bit

@@ -1,0 +1,45 @@
+---
+# =============================================================================
+# setup_pi.yml
+# Raspberry Pi 3B : base system, Docker, K3s master,
+# Node Exporter.
+#
+# Use (from dev machine) :
+#   ansible-playbook -i inventory.ini setup_pi.yml
+#   ansible-playbook -i inventory.ini setup_pi.yml --tags docker
+#   ansible-playbook -i inventory.ini setup_pi.yml --check   # dry-run
+# =============================================================================
+
+- name: "complete provisioning of Raspberry Pi 3B"
+  hosts: pi_cluster
+  become: true          
+  gather_facts: true   
+
+  vars_files:
+    - vars/main.yml
+
+  roles:
+    - role: pi_base         # base system (tags: base)
+      tags: base
+
+    - role: docker          # docker installation CE ARM (tags: docker)
+      tags: docker
+
+    - role: k3s_master      # K3s in master mode (tags: k3s)
+      tags: k3s
+
+    - role: node_exporter   # Node Exporter for Prometheus (tags: monitoring)
+      tags: monitoring
+
+  post_tasks:
+    - name: "Services verification"
+      ansible.builtin.debug:
+        msg:
+          - "Docker : {{ 'active' if docker_running else 'Error' }}"
+          - "K3s : {{ 'active' if k3s_running else 'Error' }}"
+          - "Node Exp : {{ 'active' if node_exp_running else 'Error' }}"
+      vars:
+        docker_running: "{{ ansible_facts.services['docker.service'].state == 'running' }}"
+        k3s_running: "{{ ansible_facts.services['k3s.service'].state == 'running' }}"
+        node_exp_running: "{{ ansible_facts.services['node_exporter.service'].state == 'running' }}"
+      ignore_errors: true

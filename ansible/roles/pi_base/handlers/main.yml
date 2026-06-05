@@ -1,0 +1,8 @@
+---
+# roles/pi_base/handlers/main.yml
+
+- name: reboot_pi
+  ansible.builtin.reboot:
+    msg: "Reboot required to enable K3s cgroups"
+    reboot_timeout: 120
+    post_reboot_delay: 30

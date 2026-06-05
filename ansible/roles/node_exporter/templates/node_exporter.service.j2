@@ -1,0 +1,22 @@
+[Unit]
+Description=Prometheus Node Exporter
+Documentation=https://github.com/prometheus/node_exporter
+After=network.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+ExecStart=/usr/local/bin/node_exporter \
+    --web.listen-address=:{{ node_exporter_port }} \
+    --collector.cpu \
+    --collector.meminfo \
+    --collector.filesystem \
+    --collector.netdev \
+    --collector.thermal_zone \
+    --collector.hwmon
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

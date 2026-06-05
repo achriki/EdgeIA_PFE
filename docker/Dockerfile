@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     libgomp1 \
-    libglib2.0-0 \
+    libglib2.0-0t64 \
     && rm -rf /var/lib/apt/lists/*
 # work inside /install
 WORKDIR /install
@@ -49,16 +49,9 @@ FROM python:3.11-slim AS runtime
 # curl : useful for health checks inside the container
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
-    libglib2.0-0 \
-    libgl1-mesa-glx \
+    libglib2.0-0t64 \
     curl \
-    && rm -rf /var/lib/apt/lists/* \
-    || (apt-get update && apt-get install -y --no-install-recommends \
-    libgomp1 \
-    libglib2.0-0 \
-    libgles2 \
-    curl \
-    && rm -rf /var/lib/apt/lists/*)
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local

@@ -40,7 +40,7 @@ jobs:
         with:
           submodules: recursive    # clones model/yolov5 alongside the main repo
           lfs: true                # keep LFS enabled for best.pt
-          
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v5.4.0
         with:
@@ -51,6 +51,7 @@ jobs:
         run: |
             pip install -r requirements-test.txt 
             pip install -r model/yolov5/requirements.txt
+            pip install "numpy==1.26.4"
 
       - name: Run unit tests
         run: pytest tests/unit/ -v --tb=short

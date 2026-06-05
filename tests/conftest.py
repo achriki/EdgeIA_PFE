@@ -23,7 +23,7 @@ pathlib.WindowsPath = pathlib.PosixPath
 ROOT = Path(__file__).resolve().parents[1]
 
 MODEL_PT = ROOT / "model/train/edge_cctv_v2/weights/best.pt"
-MODEL_TFLITE = ROOT / "model/train/edge_cctv_v2/best_int8.tflite"  # model compression output
+MODEL_TFLITE = ROOT / "model/train/edge_cctv_v2/export/best_int8.tflite"  # model compression output
 DATA_YAML = ROOT / "data/data.yaml"
 TEST_IMGS = ROOT / "data/splits/test/images"
 TEST_LBLS = ROOT / "data/splits/test/labels"

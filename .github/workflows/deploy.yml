@@ -108,10 +108,9 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
-          platforms: linux/amd64,linux/arm/v7
-          push: ${{ github.ref == 'refs/heads/main' }}   # push only on main
+          platforms: linux/amd64        # ARM temporarily removed — add back after pipeline is stable
+          push: ${{ github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
-          # GHA cache: reuses BuildKit layers between runs (~3× faster rebuilds)
           cache-from: type=gha
           cache-to: type=gha,mode=max
   # JOB 3 — SSH into Raspberry Pi → rolling update in K3s

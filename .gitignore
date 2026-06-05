@@ -17,3 +17,7 @@ model/val/
 #MLflow
 mlruns/
 
+
+data/splits/test/labels.cache
+data/splits/train/labels.cache
+data/splits/val/labels.cache

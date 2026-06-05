@@ -29,15 +29,8 @@ COPY docker/requirements.txt ./requirements.txt
 
 # install all python deps into install/packages
 
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
-        pip install --no-cache-dir --prefix=/install/packages \
-            tensorflow-cpu==2.14.0 \
-            $(grep -v tflite-runtime requirements.txt | grep -v "^#" | grep -v "^$" | tr '\n' ' '); \
-    else \
-        pip install --no-cache-dir --prefix=/install/packages \
-            -r requirements.txt; \
-    fi
-
+RUN pip install --no-cache-dir --prefix=/install/packages \
+    -r requirements.txt
 # Stage 2: the actual image that runs on both arches
 
 FROM python:3.11-slim AS runtime

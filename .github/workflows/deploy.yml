@@ -124,24 +124,21 @@ jobs:
     if: github.ref == 'refs/heads/main'
  
     steps:
+
+      - name: Install cloudflared
+        run: |
+          wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x cloudflared-linux-amd64
+          sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
+
       - name: SSH into Pi and trigger rolling update
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PI_HOST }}
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
+          proxy_command: cloudflared access ssh --hostname %h
           script: |
-            # 1. Pull the new image explicitly before restarting pods
-            #    (ensures image is cached locally before K3s restarts)
             docker pull ${{ env.IMAGE }}:latest
- 
-            # 2. Apply the manifest — K3s will detect the new image tag
-            #    and perform a rolling update:
-            #      a. Start new pod with new image
-            #      b. Wait for readiness probe to pass
-            #      c. Only then terminate the old pod
-            #    If the new pod never becomes Ready, K3s rolls back automatically.
             kubectl apply -f /home/achriki/k8s/deployment.yaml
- 
-            # 3. Block until rollout completes (or timeout after 2 min)
             kubectl rollout status deployment/person-detector --timeout=120s

@@ -125,11 +125,10 @@ jobs:
  
     steps:
 
-      - name: Install cloudflared
-        run: |
-          wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-          chmod +x cloudflared-linux-amd64
-          sudo mv cloudflared-linux-amd64 /usr/local/bin/cloudflared
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
       - name: SSH into Pi and trigger rolling update
         uses: appleboy/ssh-action@v1.0.3
@@ -137,7 +136,6 @@ jobs:
           host: ${{ secrets.PI_HOST }}
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
-          proxy_command: cloudflared access ssh --hostname %h
           script: |
             docker pull ${{ env.IMAGE }}:latest
             kubectl apply -f /home/achriki/k8s/deployment.yaml

@@ -137,6 +137,6 @@ jobs:
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
           script: |
-            docker pull ${{ env.IMAGE }}:latest
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/edgeia-person-detector:latest
             kubectl apply -f /home/achriki/k8s/deployment.yaml
             kubectl rollout status deployment/person-detector --timeout=120s

@@ -50,11 +50,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0t64 \
     libopenblas0 \
     libjpeg62-turbo \
-    libpng16-16 \
+    libpng16-16t64 \
     libwebp7 \
     curl \
     && rm -rf /var/lib/apt/lists/*
-
+    
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local
 

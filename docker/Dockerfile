@@ -20,6 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     libgomp1 \
     libglib2.0-0t64 \
+    libjpeg-dev \
+    zlib1g-dev \
+    libpng-dev \
+    libwebp-dev \
     && rm -rf /var/lib/apt/lists/*
 # work inside /install
 WORKDIR /install
@@ -30,6 +34,7 @@ COPY docker/requirements.txt ./requirements.txt
 # install all python deps into install/packages
 
 RUN pip install --no-cache-dir --prefix=/install/packages \
+    --extra-index-url https://www.piwheels.org/simple \
     -r requirements.txt
 # Stage 2: the actual image that runs on both arches
 

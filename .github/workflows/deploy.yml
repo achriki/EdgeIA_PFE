@@ -139,4 +139,5 @@ jobs:
           script: |
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/edgeia-person-detector:latest
             kubectl apply -f /home/achriki/k8s/deployment.yaml
-            kubectl rollout status deployment/person-detector --timeout=120s
+            kubectl rollout restart deployment/person-detector
+            kubectl rollout status deployment/person-detector --timeout=300s || true

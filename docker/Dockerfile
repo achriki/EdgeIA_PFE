@@ -58,11 +58,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libsm6 \
     libxrender1 \
-    libavcodec59 \
-    libavformat59 \
-    libavutil57 \
-    libswscale6 \
-    libcblas3 \
+    libavcodec61 \
+    libavformat61 \
+    libavutil59 \
+    libswscale8 \
+    libgslcblas0 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

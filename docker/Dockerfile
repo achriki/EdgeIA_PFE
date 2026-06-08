@@ -66,8 +66,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-
-
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local
 

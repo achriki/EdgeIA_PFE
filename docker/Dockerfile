@@ -52,10 +52,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg62-turbo \
     libpng16-16t64 \
     libwebp7 \
-    libtiff6 \        
-    curl \
+    libtiff6 \
+    libopenjp2-7 \  
+    libv4l-0 \
+    libxext6 \
+    libsm6 \
+    libxrender1 \
     && rm -rf /var/lib/apt/lists/*
-    
+
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local
 

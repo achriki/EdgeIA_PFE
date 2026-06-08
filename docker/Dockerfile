@@ -58,8 +58,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libsm6 \
     libxrender1 \
+    libavcodec59 \
+    libavformat59 \
+    libavutil57 \
+    libswscale6 \
+    libcblas3 \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+
 
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local
@@ -71,6 +78,9 @@ USER appuser
 # Copy application code
 COPY --chown=appuser:appuser model/train/edge_cctv_v2/weights/best.pt ./model/best.pt
 COPY --chown=appuser:appuser app/ ./
+
+# EXPOSE — catches missing
+RUN python -c "import cv2; import numpy; print('runtime libs OK')"
 
 # Expose the inference API port
 EXPOSE 5000

@@ -28,7 +28,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libavformat-dev \
     libswscale-dev \
     libavutil-dev \
-    python3-opencv \
     && rm -rf /var/lib/apt/lists/*
 # work inside /install
 WORKDIR /install
@@ -40,7 +39,9 @@ COPY docker/requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir --prefix=/install/packages \
     --extra-index-url https://www.piwheels.org/simple \
-    -r requirements.txt 
+    -r requirements.txt && \
+    pip install --no-cache-dir --prefix=/install/packages \
+    opencv-python-headless==4.10.0.84
 # Stage 2: the actual image that runs on both arches
 
 FROM python:3.11-slim AS runtime

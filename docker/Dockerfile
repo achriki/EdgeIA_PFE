@@ -65,7 +65,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-opencv \
     curl \
     && rm -rf /var/lib/apt/lists/* \
-    && cp -r /usr/lib/python3/dist-packages/cv2 /usr/local/lib/python3.11/site-packages/cv2
+    && find /usr/lib/python3 -name "cv2*" -type f 2>/dev/null | head -5 \
+    && CV2_PATH=$(find /usr/lib/python3 -name "cv2*.so" 2>/dev/null | head -1) \
+    && cp $CV2_PATH /usr/local/lib/python3.11/site-packages/
 
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local

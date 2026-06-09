@@ -28,21 +28,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libavformat-dev \
     libswscale-dev \
     libavutil-dev \
+    python3-opencv \
     && rm -rf /var/lib/apt/lists/*
 # work inside /install
 WORKDIR /install
 
 # Copy only requirement.txt
 COPY docker/requirements.txt ./requirements.txt
-COPY docker/requirements-cv.txt ./requirements-cv.txt
 
 # install all python deps into install/packages
 
 RUN pip install --no-cache-dir --prefix=/install/packages \
     --extra-index-url https://www.piwheels.org/simple \
-    -r requirements.txt && \
-    pip install --no-cache-dir --prefix=/install/packages \
-    -r requirements-cv.txt
+    -r requirements.txt 
 # Stage 2: the actual image that runs on both arches
 
 FROM python:3.11-slim AS runtime
@@ -53,18 +51,19 @@ FROM python:3.11-slim AS runtime
 # libgl1 : OpenGL - opencv needs this even in headless mode
 # curl : useful for health checks inside the container
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    g++ \
     libgomp1 \
     libglib2.0-0t64 \
-    libjpeg-dev \
-    zlib1g-dev \
-    libpng-dev \
-    libwebp-dev \
-    libavcodec-dev \
-    libavformat-dev \
-    libswscale-dev \
-    libavutil-dev \
+    libopenblas0 \
+    libjpeg62-turbo \
+    libpng16-16t64 \
+    libwebp7 \
+    libavcodec61 \
+    libavformat61 \
+    libswscale8 \
+    libavutil59 \
+    libblas3 \
+    python3-opencv \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy compiled packages from the builder stage

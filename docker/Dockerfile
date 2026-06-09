@@ -52,9 +52,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg62-turbo \
     libpng16-16t64 \
     libwebp7 \
-    libavcodec-dev \
-    libavformat-dev \
-    libswscale-dev \
+    libavcodec59 \
+    libavformat59 \
+    libswscale6 \
+    libavutil57 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

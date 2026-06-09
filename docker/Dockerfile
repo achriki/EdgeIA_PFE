@@ -58,9 +58,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libavutil59 \
     curl \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/lib/arm-linux-gnueabihf/libavcodec.so.61 /usr/lib/arm-linux-gnueabihf/libavcodec.so.59 \
-    && ln -s /usr/lib/arm-linux-gnueabihf/libavformat.so.61 /usr/lib/arm-linux-gnueabihf/libavformat.so.59 \
-    && ln -s /usr/lib/arm-linux-gnueabihf/libswscale.so.8 /usr/lib/arm-linux-gnueabihf/libswscale.so.6
+    && find /usr/lib -name "libavcodec.so.61" 2>/dev/null \
+    && LIBDIR=$(dirname $(find /usr/lib -name "libavcodec.so.61" 2>/dev/null | head -1)) \
+    && ln -s $LIBDIR/libavcodec.so.61 $LIBDIR/libavcodec.so.59 \
+    && ln -s $LIBDIR/libavformat.so.61 $LIBDIR/libavformat.so.59 \
+    && ln -s $LIBDIR/libswscale.so.8 $LIBDIR/libswscale.so.6
 
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local

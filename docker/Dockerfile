@@ -52,12 +52,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg62-turbo \
     libpng16-16t64 \
     libwebp7 \
-    libavcodec59 \
-    libavformat59 \
-    libswscale6 \
-    libavutil57 \
+    libavcodec61 \
+    libavformat61 \
+    libswscale8 \
+    libavutil59 \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/lib/arm-linux-gnueabihf/libavcodec.so.61 /usr/lib/arm-linux-gnueabihf/libavcodec.so.59 \
+    && ln -s /usr/lib/arm-linux-gnueabihf/libavformat.so.61 /usr/lib/arm-linux-gnueabihf/libavformat.so.59 \
+    && ln -s /usr/lib/arm-linux-gnueabihf/libswscale.so.8 /usr/lib/arm-linux-gnueabihf/libswscale.so.6
 
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local

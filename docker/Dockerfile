@@ -24,6 +24,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     libpng-dev \
     libwebp-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libavutil-dev \
     && rm -rf /var/lib/apt/lists/*
 # work inside /install
 WORKDIR /install
@@ -35,7 +39,9 @@ COPY docker/requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir --prefix=/install/packages \
     --extra-index-url https://www.piwheels.org/simple \
-    -r requirements.txt
+    -r requirements.txt && \
+    pip install --no-cache-dir --prefix=/install/packages \
+    -r requirements-cv.txt
 # Stage 2: the actual image that runs on both arches
 
 FROM python:3.11-slim AS runtime
@@ -46,23 +52,19 @@ FROM python:3.11-slim AS runtime
 # libgl1 : OpenGL - opencv needs this even in headless mode
 # curl : useful for health checks inside the container
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
     libgomp1 \
     libglib2.0-0t64 \
-    libopenblas0 \
-    libjpeg62-turbo \
-    libpng16-16t64 \
-    libwebp7 \
-    libavcodec61 \
-    libavformat61 \
-    libswscale8 \
-    libavutil59 \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && find /usr/lib -name "libavcodec.so.61" 2>/dev/null \
-    && LIBDIR=$(dirname $(find /usr/lib -name "libavcodec.so.61" 2>/dev/null | head -1)) \
-    && ln -s $LIBDIR/libavcodec.so.61 $LIBDIR/libavcodec.so.59 \
-    && ln -s $LIBDIR/libavformat.so.61 $LIBDIR/libavformat.so.59 \
-    && ln -s $LIBDIR/libswscale.so.8 $LIBDIR/libswscale.so.6
+    libjpeg-dev \
+    zlib1g-dev \
+    libpng-dev \
+    libwebp-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libavutil-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local

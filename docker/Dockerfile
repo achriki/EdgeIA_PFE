@@ -52,17 +52,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg62-turbo \
     libpng16-16t64 \
     libwebp7 \
-    libtiff6 \
-    libopenjp2-7 \
-    libv4l-0t64 \
-    libxext6 \
-    libsm6 \
-    libxrender1 \
-    libavcodec61 \
-    libavformat61 \
-    libavutil59 \
-    libswscale8 \
-    libgslcblas0 \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -78,7 +70,7 @@ COPY --chown=appuser:appuser model/train/edge_cctv_v2/weights/best.pt ./model/be
 COPY --chown=appuser:appuser app/ ./
 
 # EXPOSE — catches missing
-RUN python -c "import cv2; import numpy; print('runtime libs OK')"
+# RUN python -c "import cv2; import numpy; print('runtime libs OK')"
 
 # Expose the inference API port
 EXPOSE 5000

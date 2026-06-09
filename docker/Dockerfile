@@ -34,6 +34,7 @@ WORKDIR /install
 
 # Copy only requirement.txt
 COPY docker/requirements.txt ./requirements.txt
+COPY docker/requirements-cv.txt ./requirements-cv.txt
 
 # install all python deps into install/packages
 

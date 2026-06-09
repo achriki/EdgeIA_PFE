@@ -136,6 +136,7 @@ jobs:
           host: ${{ secrets.PI_HOST }}
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
+          command_timeout: 10m
           script: |
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/edgeia-person-detector:latest
             kubectl apply -f /home/achriki/k8s/deployment.yaml

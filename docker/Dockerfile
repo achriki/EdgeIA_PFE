@@ -64,7 +64,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libblas3 \
     python3-opencv \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && cp -r /usr/lib/python3/dist-packages/cv2 /usr/local/lib/python3.11/site-packages/cv2
 
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local

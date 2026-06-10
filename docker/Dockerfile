@@ -9,7 +9,7 @@
 
 # Stage 1: install python packages that need compilation (numpy, opencv, tflite)
 
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 # gcc/g++ : needed to compile C extensions of some pip packages
 # libgomp1 : OpenMP runtime - required by numpy on ARM
@@ -42,7 +42,7 @@ RUN pip install --no-cache-dir --prefix=/install/packages \
     -r requirements.txt
 # Stage 2: the actual image that runs on both arches
 
-FROM python:3.11-slim AS runtime
+FROM python:3.13-slim AS runtime
 
 # Runtime-only system libraries 
 # libgomp1 : OpenMP - same reason as builder, needed at runtime
@@ -50,22 +50,10 @@ FROM python:3.11-slim AS runtime
 # libgl1 : OpenGL - opencv needs this even in headless mode
 # curl : useful for health checks inside the container
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-opencv \
     libgomp1 \
-    libglib2.0-0t64 \
     libopenblas0 \
-    libjpeg62-turbo \
-    libpng16-16t64 \
-    libwebp7 \
-    libavcodec61 \
-    libavformat61 \
-    libswscale8 \
-    libavutil59 \
     libblas3 \
-    libavutil56 \
-    libavcodec58 \
-    libavformat58 \
-    libswscale5 \
-    libswresample3 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

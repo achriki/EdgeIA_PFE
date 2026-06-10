@@ -17,9 +17,12 @@ MODEL_PATH = Path(args.model)
 assert MODEL_PATH.exists(), f"Model not found: {MODEL_PATH}"
 
 try:
-    from tflite_runtime.interpreter import Interpreter
+    from ai_edge_litert.interpreter import Interpreter
 except ImportError:
-    from tensorflow.lite.python.interpreter import Interpreter
+    try:
+        from tflite_runtime.interpreter import Interpreter
+    except ImportError:
+        from tensorflow.lite.python.interpreter import Interpreter
 
 interpreter = Interpreter(model_path=str(MODEL_PATH))
 interpreter.allocate_tensors()

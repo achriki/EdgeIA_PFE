@@ -1,8 +1,8 @@
 import argparse
 from pathlib import Path
-
-import cv2
 import numpy as np
+from PIL import Image
+import io
 from flask import Flask, jsonify, request
 from prometheus_client import Counter, Histogram, generate_latest
 
@@ -43,12 +43,13 @@ LATENCY = Histogram("inference_latency_seconds", "Inference latency")
 app = Flask(__name__)
 
 
-def preprocess(frame):
+def preprocess(image_bytes):
     """Resize and normalize frame for TFLite input."""
-    img = cv2.resize(frame, (INPUT_W, INPUT_H))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img = np.expand_dims(img, axis=0).astype(np.uint8)  # INT8 model expects uint8
-    return img
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    orig_w, orig_h = img.size
+    img = img.resize((INPUT_W, INPUT_H))
+    arr = np.expand_dims(np.array(img, dtype=np.uint8), axis=0)
+    return arr, orig_h, orig_w
 
 
 def postprocess(output, orig_h, orig_w, conf_threshold=0.4):
@@ -57,23 +58,21 @@ def postprocess(output, orig_h, orig_w, conf_threshold=0.4):
     Output shape: [1, num_detections, 6] → [x1, y1, x2, y2, conf, class]
     """
     detections = []
-    predictions = output[0]  # shape: [num_detections, 6]
-
-    for pred in predictions:
+    for pred in output[0]:
         conf = float(pred[4])
         cls  = int(pred[5])
-        if conf < conf_threshold or cls != 0:  # class 0 = person only
+        if conf < conf_threshold or cls != 0:
             continue
-        x1 = round(float(pred[0]) * orig_w, 1)
-        y1 = round(float(pred[1]) * orig_h, 1)
-        x2 = round(float(pred[2]) * orig_w, 1)
-        y2 = round(float(pred[3]) * orig_h, 1)
         detections.append({
-            "x1": x1, "y1": y1, "x2": x2, "y2": y2,
+            "x1": round(float(pred[0]) * orig_w, 1),
+            "y1": round(float(pred[1]) * orig_h, 1),
+            "x2": round(float(pred[2]) * orig_w, 1),
+            "y2": round(float(pred[3]) * orig_h, 1),
             "conf": round(conf, 3),
             "class": cls,
         })
     return detections
+
 
 
 @app.route("/health")
@@ -88,29 +87,21 @@ def predict():
     Returns JSON with list of person detections.
     """
     REQUEST_COUNT.inc()
-
     if "image" not in request.files:
         return jsonify({"error": "No image field in request"}), 400
-
-    file  = request.files["image"]
-    buf   = np.frombuffer(file.read(), np.uint8)
-    frame = cv2.imdecode(buf, cv2.IMREAD_COLOR)
-
-    if frame is None:
-        return jsonify({"error": "Could not decode image"}), 400
-
-    orig_h, orig_w = frame.shape[:2]
-    img = preprocess(frame)
-
+    image_bytes = request.files["image"].read()
+    try:
+        arr, orig_h, orig_w = preprocess(image_bytes)
+    except Exception as e:
+        return jsonify({"error": f"Could not decode image: {e}"}), 400
     with LATENCY.time():
-        interpreter.set_tensor(input_details[0]['index'], img)
+        interpreter.set_tensor(input_details[0]['index'], arr)
         interpreter.invoke()
         output = interpreter.get_tensor(output_details[0]['index'])
-
     detections = postprocess(output, orig_h, orig_w)
     DETECT_COUNT.inc(len(detections))
-
     return jsonify({"persons": len(detections), "detections": detections}), 200
+
 
 
 @app.route("/metrics")

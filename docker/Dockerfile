@@ -56,10 +56,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg62-turbo \
     libpng16-16t64 \
     libwebp7 \
-    libavcodec61 \
-    libavformat61 \
-    libswscale8 \
-    libavutil59 \
     libblas3 \
     curl \
     && rm -rf /var/lib/apt/lists/*

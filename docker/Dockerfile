@@ -56,6 +56,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg62-turbo \
     libpng16-16t64 \
     libwebp7 \
+    libwebpmux3 \
+    libwebpdemux2 \
+    libtiff6 \
+    libopenjp2-7 \
+    libxcb1 \
+    libfreetype6 \
+    liblcms2-2 \
     libblas3 \
     curl \
     && rm -rf /var/lib/apt/lists/*

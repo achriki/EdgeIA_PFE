@@ -39,9 +39,7 @@ COPY docker/requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir --prefix=/install/packages \
     --extra-index-url https://www.piwheels.org/simple \
-    -r requirements.txt && \
-    pip install --no-cache-dir --prefix=/install/packages \
-    opencv-python-headless==4.10.0.84
+    -r requirements.txt
 # Stage 2: the actual image that runs on both arches
 
 FROM python:3.11-slim AS runtime
@@ -63,12 +61,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libswscale8 \
     libavutil59 \
     libblas3 \
-    python3-opencv \
+    libavutil56 \
+    libavcodec58 \
+    libavformat58 \
+    libswscale5 \
+    libswresample3 \
     curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && find /usr/lib/python3 -name "cv2*" -type f 2>/dev/null | head -5 \
-    && CV2_PATH=$(find /usr/lib/python3 -name "cv2*.so" 2>/dev/null | head -1) \
-    && cp $CV2_PATH /usr/local/lib/python3.11/site-packages/
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy compiled packages from the builder stage
 COPY --from=builder /install/packages /usr/local

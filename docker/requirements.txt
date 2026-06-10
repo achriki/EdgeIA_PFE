@@ -5,7 +5,7 @@
 
 # Core inference runtime
 numpy==1.26.4  # arm/v7 wheels available for 1.24.x
-# opencv-python-headless==4.8.1.78  # headless = no GUI deps (saves ~30 MB)
+opencv-python-headless==4.10.0.84  # headless = no GUI deps (saves ~30 MB)
 PyYAML==6.0.1 # for loading dataset.yaml / configs
 
 # TFLite runtime (replaces full TensorFlow — ~2 MB vs ~400 MB)

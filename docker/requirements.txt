@@ -4,20 +4,20 @@
 
 
 # Core inference runtime
-numpy==1.26.4  # arm/v7 wheels available for 1.24.x
+numpy==2.2.6  # arm/v7 wheels available for 1.24.x
 # opencv-python-headless==4.10.0.84  # headless = no GUI deps (saves ~30 MB)
-PyYAML==6.0.1 # for loading dataset.yaml / configs
+PyYAML==6.0.2 # for loading dataset.yaml / configs
 
 # TFLite runtime (replaces full TensorFlow — ~2 MB vs ~400 MB)
 # The correct wheel is auto-selected by pip based on platform tag.
-tflite-runtime==2.14.0
+# tflite-runtime==2.14.0+rpi4.bookworm
 
 # Inference API
-flask==3.0.3
-gunicorn==22.0.0
+flask==3.1.1
+gunicorn==23.0.0
 
 # Metrics exposure for Prometheus (used by Grafana dashboard)
-prometheus-client==0.20.0
+prometheus-client==0.21.1
 
 # Pillow for image pre/post-processing
-Pillow==10.3.0
+Pillow==11.2.1

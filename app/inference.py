@@ -1,91 +1,121 @@
 import argparse
-import sys
 from pathlib import Path
- 
+
 import cv2
 import numpy as np
-import torch
 from flask import Flask, jsonify, request
 from prometheus_client import Counter, Histogram, generate_latest
-import pathlib
 
 # CLI args
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", required=True, help="Path to best.pt")
+parser.add_argument("--model", required=True, help="Path to best_int8.tflite")
 parser.add_argument("--port", type=int, default=5000)
 args = parser.parse_args()
 
-
-pathlib.WindowsPath = pathlib.PosixPath
-
+# Load TFLite model
 MODEL_PATH = Path(args.model)
 assert MODEL_PATH.exists(), f"Model not found: {MODEL_PATH}"
 
-model = torch.hub.load(
-    str(Path(__file__).parent / "yolov5"),   # local yolov5 repo if present
-    "custom",
-    path=str(MODEL_PATH),
-    source="local",
-    force_reload=False,
-)
-model.eval()
-model.conf = 0.4   # confidence threshold
-model.classes = [0]  # class 0 = person only
+try:
+    from tflite_runtime.interpreter import Interpreter
+except ImportError:
+    from tensorflow.lite.python.interpreter import Interpreter
+
+interpreter = Interpreter(model_path=str(MODEL_PATH))
+interpreter.allocate_tensors()
+
+input_details  = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+
+# Model input shape: [1, H, W, C]
+INPUT_H = input_details[0]['shape'][1]
+INPUT_W = input_details[0]['shape'][2]
 
 # Prometheus metrics
-REQUEST_COUNT  = Counter("inference_requests_total", "Total inference requests")
-DETECT_COUNT   = Counter("persons_detected_total",   "Total persons detected")
-LATENCY        = Histogram("inference_latency_seconds", "Inference latency")
+REQUEST_COUNT = Counter("inference_requests_total", "Total inference requests")
+DETECT_COUNT = Counter("persons_detected_total",   "Total persons detected")
+LATENCY = Histogram("inference_latency_seconds", "Inference latency")
 
 # Flask app
 app = Flask(__name__)
- 
+
+
+def preprocess(frame):
+    """Resize and normalize frame for TFLite input."""
+    img = cv2.resize(frame, (INPUT_W, INPUT_H))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = np.expand_dims(img, axis=0).astype(np.uint8)  # INT8 model expects uint8
+    return img
+
+
+def postprocess(output, orig_h, orig_w, conf_threshold=0.4):
+    """
+    Parse YOLOv5 TFLite output into detections.
+    Output shape: [1, num_detections, 6] → [x1, y1, x2, y2, conf, class]
+    """
+    detections = []
+    predictions = output[0]  # shape: [num_detections, 6]
+
+    for pred in predictions:
+        conf = float(pred[4])
+        cls  = int(pred[5])
+        if conf < conf_threshold or cls != 0:  # class 0 = person only
+            continue
+        x1 = round(float(pred[0]) * orig_w, 1)
+        y1 = round(float(pred[1]) * orig_h, 1)
+        x2 = round(float(pred[2]) * orig_w, 1)
+        y2 = round(float(pred[3]) * orig_h, 1)
+        detections.append({
+            "x1": x1, "y1": y1, "x2": x2, "y2": y2,
+            "conf": round(conf, 3),
+            "class": cls,
+        })
+    return detections
+
+
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"}), 200
- 
+
+
 @app.route("/predict", methods=["POST"])
 def predict():
     """
     Accepts a JPEG/PNG image via multipart form-data (field: 'image').
-    Returns JSON with list of detections: [{x1,y1,x2,y2,conf,class}]
+    Returns JSON with list of person detections.
     """
     REQUEST_COUNT.inc()
- 
+
     if "image" not in request.files:
         return jsonify({"error": "No image field in request"}), 400
- 
+
     file  = request.files["image"]
     buf   = np.frombuffer(file.read(), np.uint8)
     frame = cv2.imdecode(buf, cv2.IMREAD_COLOR)
- 
+
     if frame is None:
         return jsonify({"error": "Could not decode image"}), 400
- 
+
+    orig_h, orig_w = frame.shape[:2]
+    img = preprocess(frame)
+
     with LATENCY.time():
-        results = model(frame)
- 
-    detections = []
-    for *box, conf, cls in results.xyxy[0].tolist():
-        detections.append({
-            "x1": round(box[0], 1),
-            "y1": round(box[1], 1),
-            "x2": round(box[2], 1),
-            "y2": round(box[3], 1),
-            "conf": round(conf, 3),
-            "class": int(cls),
-        })
- 
+        interpreter.set_tensor(input_details[0]['index'], img)
+        interpreter.invoke()
+        output = interpreter.get_tensor(output_details[0]['index'])
+
+    detections = postprocess(output, orig_h, orig_w)
     DETECT_COUNT.inc(len(detections))
+
     return jsonify({"persons": len(detections), "detections": detections}), 200
- 
+
+
 @app.route("/metrics")
 def metrics():
     return generate_latest(), 200, {"Content-Type": "text/plain; charset=utf-8"}
 
-# Entry point
+
 if __name__ == "__main__":
-    print(f"Starting inference server on port {args.port}")
-    print(f"Model: {MODEL_PATH}")
+    print(f"Starting TFLite inference server on port {args.port}")
+    print(f"Model: {MODEL_PATH} ({INPUT_W}x{INPUT_H})")
     app.run(host="0.0.0.0", port=args.port)
-    

@@ -51,6 +51,7 @@ FROM python:3.13-slim AS runtime
 # curl : useful for health checks inside the container
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-opencv \
+    libtensorflow-lite2.20.0 \
     libgomp1 \
     libopenblas0 \
     libblas3 \
@@ -65,7 +66,7 @@ WORKDIR /home/appuser/app
 USER appuser
 
 # Copy application code
-COPY --chown=appuser:appuser model/train/edge_cctv_v2/weights/best.pt ./model/best.pt
+COPY --chown=appuser:appuser model/train/edge_cctv_v2/export/best_int8.tflite ./model/best_int8.tflite
 COPY --chown=appuser:appuser app/ ./
 
 # EXPOSE — catches missing
@@ -79,4 +80,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
 # Entry point # using only CMD to avoid entry point concat issue
-CMD ["python", "inference.py", "--model", "./model/best.pt", "--port", "5000"]
+CMD ["python", "inference.py", "--model", "./model/best_int8.tflite", "--port", "5000"]

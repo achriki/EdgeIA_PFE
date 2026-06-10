@@ -39,7 +39,9 @@ COPY docker/requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir --prefix=/install/packages \
     --extra-index-url https://www.piwheels.org/simple \
-    -r requirements.txt
+    -r requirements.txt && \
+    pip install --no-cache-dir --prefix=/install/packages \
+    tflite-runtime --find-links https://github.com/prepkg/tflite-runtime-raspberrypi/releases/latest
 # Stage 2: the actual image that runs on both arches
 
 FROM python:3.13-slim AS runtime
@@ -51,7 +53,6 @@ FROM python:3.13-slim AS runtime
 # curl : useful for health checks inside the container
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-opencv \
-    libtensorflow-lite2.20.0 \
     libgomp1 \
     libopenblas0 \
     libblas3 \

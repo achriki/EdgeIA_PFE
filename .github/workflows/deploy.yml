@@ -71,6 +71,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
+        with:
+          submodules: recursive
+          lfs: true
  
       # QEMU allows the amd64 runner to emulate ARM/v7 for the Pi
       - name: Set up QEMU (ARM emulation)

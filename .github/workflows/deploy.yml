@@ -141,7 +141,10 @@ jobs:
           key: ${{ secrets.PI_SSH_KEY }}
           command_timeout: 10m
           script: |
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/edgeia-person-detector:latest
-            kubectl apply -f /home/achriki/k8s/deployment.yaml
-            kubectl rollout restart deployment/person-detector
-            kubectl rollout status deployment/person-detector --timeout=300s || true
+            kubectl set image deployment/person-detector \
+              person-detector=${{ secrets.DOCKER_HUB_USERNAME }}/edgeia-person-detector:latest
+            kubectl rollout status deployment/person-detector --timeout=300s
+            if [ $? -ne 0 ]; then
+              kubectl rollout undo deployment/person-detector
+              exit 1
+            fi

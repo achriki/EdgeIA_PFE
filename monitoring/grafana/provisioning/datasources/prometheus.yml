@@ -1,0 +1,15 @@
+# Automatic provisioning of the Prometheus data source in Grafana
+# Grafana connects to the Prometheus container via the Docker “monitoring” network
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus-edgeia
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      httpMethod: POST

@@ -121,30 +121,36 @@ jobs:
   # Skipped on PRs (if: github.ref == 'refs/heads/main')
 
   deploy:
-    name: Deploy to Raspberry Pi (K3s)
+    name: Deploy via Ansible
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
- 
+
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Install Ansible
+        run: pip install ansible
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
-      - name: SSH into Pi and trigger rolling update
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.PI_HOST }}
-          username: ${{ secrets.PI_USER }}
-          key: ${{ secrets.PI_SSH_KEY }}
-          command_timeout: 10m
-          script: |
-            kubectl set image deployment/person-detector \
-              person-detector=${{ secrets.DOCKER_HUB_USERNAME }}/edgeia-person-detector:latest
-            kubectl rollout status deployment/person-detector --timeout=300s
-            if [ $? -ne 0 ]; then
-              kubectl rollout undo deployment/person-detector
-              exit 1
-            fi
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PI_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.PI_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Run Ansible playbook
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          ansible-playbook -i ansible/inventory.ini ansible/deploy_model.yml
+          
+      - name: Notify on failure
+        if: failure()
+        run: echo "Deployment failed for tag ${{ env.IMAGE_TAG }} - rollback has been triggered automatically"

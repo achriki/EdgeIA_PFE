@@ -75,7 +75,7 @@ WORKDIR /home/appuser/app
 USER appuser
 
 # Copy application code
-COPY --chown=appuser:appuser model/train/edge_cctv_v2/export/best_int8.tflite ./model/best_int8.tflite
+COPY --chown=appuser:appuser model/train/edge_cctv_v2/weights/best-fp16.tflite ./model/best-fp16.tflite
 COPY --chown=appuser:appuser app/ ./
 
 # EXPOSE — catches missing
@@ -89,4 +89,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
 # Entry point # using only CMD to avoid entry point concat issue
-CMD ["python", "inference.py", "--model", "./model/best_int8.tflite", "--port", "5000"]
+CMD ["python", "inference.py", "--model", "./model/best-fp16.tflite", "--port", "5000"]

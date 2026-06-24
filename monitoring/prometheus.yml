@@ -34,4 +34,4 @@ scrape_configs:
         labels:
           instance: 'raspEdge'
           role: 'inference'
-          model: 'edgeai-int8'
+          model: 'edgeai-FP16'

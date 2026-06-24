@@ -1,0 +1,189 @@
+# Complete deployment logic: image update → apply → wait → health check
+
+# 0. Prerequisites
+- name: "PREREQUISITES | Verify that kubectl is available"
+  ansible.builtin.command:
+    cmd: "{{ kubectl_bin }} version --client"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: kubectl_check
+  changed_when: false
+  failed_when: kubectl_check.rc != 0
+
+- name: "PREREQUISITES | Verify that the namespace exists"
+  ansible.builtin.command:
+    cmd: "{{ kubectl_bin }} get namespace {{ k8s_namespace }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: ns_check
+  changed_when: false
+  failed_when: ns_check.rc != 0
+
+- name: "PREREQUISITES | Verify that the manifests folder exists"
+  ansible.builtin.stat:
+    path: "{{ k8s_manifest_dir }}"
+  register: manifest_dir
+  failed_when: not manifest_dir.stat.exists
+
+# 1. Save the current revision (for automatic rollback)
+- name: "ROLLBACK | Retrieve the current revision before updating"
+  ansible.builtin.command:
+    cmd: >
+      {{ kubectl_bin }} get deployment {{ deployment_name }}
+      -n {{ k8s_namespace }}
+      -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}'
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: current_revision
+  changed_when: false
+  ignore_errors: true # The revision may be empty during the first deployment
+
+- name: "INFO | Current revision : {{ current_revision.stdout | default('N/A') }}"
+  ansible.builtin.debug:
+    msg: "Standard K8s pre-deployment check : {{ current_revision.stdout | default('aucune') }}"
+
+# 2. Update the image tag in the deployment.yaml manifest
+- name: "IMAGE | Read the current deployment.yaml file"
+  ansible.builtin.slurp:
+    src: "{{ k8s_manifest_dir }}/deployment.yaml"
+  register: deployment_manifest_raw
+
+- name: "IMAGE | Parse the deployment YAML"
+  ansible.builtin.set_fact:
+    deployment_manifest: "{{ deployment_manifest_raw.content | b64decode | from_yaml }}"
+
+- name: "IMAGE | Build the new manifest using the {{image_tag}} tag"
+  ansible.builtin.copy:
+    dest: "{{ k8s_manifest_dir }}/deployment.yaml"
+    content: "{{ deployment_manifest | combine(new_spec, recursive=True) | to_nice_yaml(indent=2) }}"
+    owner: achriki
+    group: achriki
+    mode: '0644'
+    backup: true # Keep a .yaml file from the old manifest
+  vars:
+    new_spec:
+      spec:
+        template:
+          metadata:
+            annotations:
+              # Force a re-rollout even if only the tag changes
+              kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+          spec:
+            containers:
+              - name: "{{ container_name }}"
+                image: "{{ docker_image }}:{{ image_tag }}"
+  notify: "Annotate deployment change-cause"
+
+# 3. Apply the updated manifest
+- name: "APPLY | Apply the updated deployment.yaml"
+  ansible.builtin.command:
+    cmd: "{{ kubectl_bin }} apply -f {{ k8s_manifest_dir }}/deployment.yaml -n {{ k8s_namespace }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: kubectl_apply
+  changed_when: "'configured' in kubectl_apply.stdout or 'created' in kubectl_apply.stdout"
+
+- name: "APPLY | Output of `kubectl apply`"
+  ansible.builtin.debug:
+    msg: "{{ kubectl_apply.stdout_lines }}"
+
+# 4. Wait for the rolling update to finish
+- name: "ROLLOUT | Wait until the rollout is available (max {{ rollout_timeout }}s)"
+  ansible.builtin.command:
+    cmd: >
+      {{ kubectl_bin }} rollout status deployment/{{ deployment_name }}
+      -n {{ k8s_namespace }}
+      --timeout={{ rollout_timeout }}s
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: rollout_status
+  changed_when: false
+  failed_when: rollout_status.rc != 0
+
+- name: "ROLLOUT | Rolling Update Status"
+  ansible.builtin.debug:
+    msg: "{{ rollout_status.stdout_lines }}"
+
+# 5. Check that the pods are running
+- name: "PODS | Retrieve the status of the deployment's pods"
+  ansible.builtin.command:
+    cmd: >
+      {{ kubectl_bin }} get pods
+      -l app={{ deployment_name }}
+      -n {{ k8s_namespace }}
+      --field-selector=status.phase=Running
+      -o jsonpath='{.items[*].metadata.name}'
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: running_pods
+  changed_when: false
+  retries: "{{ health_check_retries }}"
+  delay: "{{ health_check_delay }}"
+  until: running_pods.stdout | length > 0
+
+- name: "PODS | Running Pods Detected"
+  ansible.builtin.debug:
+    msg: "Pods active : {{ running_pods.stdout.split() }}"
+
+- name: "PODS | View pod details (image + status)"
+  ansible.builtin.command:
+    cmd: >
+      {{ kubectl_bin }} get pods
+      -l app={{ deployment_name }}
+      -n {{ k8s_namespace }}
+      -o wide
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: pods_detail
+  changed_when: false
+
+- name: "PODS | Pod Table"
+  ansible.builtin.debug:
+    msg: "{{ pods_detail.stdout_lines }}"
+
+# 6. HTTP Health Check on the NodePort
+- name: "HEALTH | Check the endpoint {{ health_check_path }} (port {{ health_check_port }})"
+  ansible.builtin.uri:
+    url: "http://localhost:{{ health_check_port }}{{ health_check_path }}"
+    method: GET
+    status_code: 200
+    timeout: 10
+  register: health_response
+  retries: "{{ health_check_retries }}"
+  delay: "{{ health_check_delay }}"
+  until: health_response.status == 200
+
+- name: "HEALTH | Réponse du service"
+  ansible.builtin.debug:
+    msg:
+      - "Status HTTP: {{ health_response.status }}"
+      - "Body: {{ health_response.json | default(health_response.content) }}"
+
+# 7. Automatic rollback if the health check fails
+- name: "ROLLBACK | Cancel the deployment if the health check fails"
+  ansible.builtin.command:
+    cmd: "{{ kubectl_bin }} rollout undo deployment/{{ deployment_name }} -n {{ k8s_namespace }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  when: health_response.status is defined and health_response.status != 200
+  register: rollback_result
+
+- name: "ROLLBACK | Rollback result"
+  ansible.builtin.debug:
+    msg: "{{ rollback_result.stdout_lines }}"
+  when: rollback_result is defined and rollback_result.stdout_lines is defined
+
+# 8. View revision history
+- name: "HISTORY | Revision history of the deployment"
+  ansible.builtin.command:
+    cmd: >
+      {{ kubectl_bin }} rollout history deployment/{{ deployment_name }}
+      -n {{ k8s_namespace }}
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: rollout_history
+  changed_when: false
+
+- name: "HISTORY | Revisions available"
+  ansible.builtin.debug:
+    msg: "{{ rollout_history.stdout_lines }}"

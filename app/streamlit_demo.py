@@ -96,7 +96,7 @@ def run_inference_and_display(image_bytes: bytes, original_image: Image.Image):
         st.image(annotated, caption="Détections", use_container_width=True)
     with col2:
         st.metric("Personnes détectées", n_persons)
-        st.metric("Latence d'inférence", f"{latency_ms:.0f} ms")
+        st.metric("Latence d'inférence", f"{latency_ms/1000:.2f} s")
         st.metric("Modèle", "YOLOv5n FP16")
         if detections:
             with st.expander("Détails des détections"):

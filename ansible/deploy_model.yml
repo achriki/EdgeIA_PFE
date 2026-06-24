@@ -1,0 +1,36 @@
+# Ansible deploy_model
+# Automates the entire model update cycle on the K3s cluster:
+#   1. Updates the image tag in the Kubernetes manifest
+#   2. Applies the deployment (kubectl apply)
+#   3. Waits for the pods to transition to the Running state
+#   4. Checks the health of the /health endpoint
+# Usage (from the development PC)
+#   ansible-playbook -i inventory.ini deploy_model.yml
+#   ansible-playbook -i inventory.ini deploy_model.yml -e "image_tag=v2"
+#   ansible-playbook -i inventory.ini deploy_model.yml --check   # dry-run
+
+- name: "Deploying the AI model on the K3s edge cluster"
+  hosts: pi_cluster
+  become: true
+  gather_facts: true # No need for OS files - faster
+
+  vars_files:
+    - vars/deploy_vars.yml
+
+  vars:
+    # Can be overridden using -e “image_tag=v2” or via GitHub Actions
+    image_tag: "{{ lookup('env', 'IMAGE_TAG') | default('latest', true) }}"
+
+  roles:
+    - role: deploy_model
+      tags: deploy
+
+  post_tasks:
+    - name: "Deployment Summary"
+      ansible.builtin.debug:
+        msg:
+          - "Image déployée : {{ docker_image }}:{{ image_tag }}"
+          - "Namespace      : {{ k8s_namespace }}"
+          - "Deployment     : {{ deployment_name }}"
+          - "Service port   : {{ health_check_port }}"
+          - "Health check   : OK"

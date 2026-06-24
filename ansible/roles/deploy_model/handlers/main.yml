@@ -1,0 +1,11 @@
+# Annotate deployment
+- name: "Annotate deployment change-cause"
+  ansible.builtin.command:
+    cmd: >
+      {{ kubectl_bin }} annotate deployment/{{ deployment_name }}
+      kubernetes.io/change-cause="Ansible deploy {{ docker_image }}:{{ image_tag }} - {{ ansible_date_time.date }}"
+      --overwrite
+      -n {{ k8s_namespace }}
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  listen: "Annotate deployment change-cause"

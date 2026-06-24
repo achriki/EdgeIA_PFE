@@ -11,7 +11,7 @@ container_name: "person-detector"
 k8s_manifest_dir: "/home/achriki/k8s" # manifests folder in the Pi
 
 # Rollout
-rollout_timeout: 120 # maximum wait time for the Running pod
+rollout_timeout: 300 #  Pi 3B needs more time under memory pressure
 rollout_poll_interval: 5 # seconds between each kubectl check
 
 # Health check

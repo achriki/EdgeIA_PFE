@@ -146,11 +146,10 @@ jobs:
           ssh-keyscan -H ${{ secrets.PI_HOST }} >> ~/.ssh/known_hosts
 
       - name: Run Ansible playbook
-        env:
-          IMAGE_TAG: sha-${{ github.sha }}
         run: |
-          ansible-playbook -i ansible/inventory.ini ansible/deploy_model.yml
-          
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          IMAGE_TAG="sha-${SHORT_SHA}" ansible-playbook -i ansible/inventory.ini ansible/deploy_model.yml
+
       - name: Notify on failure
         if: failure()
         run: echo "Deployment failed for tag ${{ env.IMAGE_TAG }} - rollback has been triggered automatically"
